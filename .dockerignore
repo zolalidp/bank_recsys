@@ -1,0 +1,9 @@
+.venv/
+.git/
+data/
+notebooks/
+catboost_info/
+__pycache__/
+*.pyc
+.env
+mlruns/

@@ -167,3 +167,8 @@ old/
 
 data/
 catboost_info/
+models/
+mlruns/
+mlflow.db
+notebooks/feature_importance.csv
+mlflow.log

@@ -123,9 +123,21 @@ def fetch_clients(ncodpers: list[int], products: list[str]) -> pd.DataFrame:
     return _restore_dtypes(df, products) if len(df) else df
 
 
+_LATEST_CACHE: dict[str, tuple[float, int]] = {}
+_LATEST_TTL_SEC = 3600  # витрина обновляется раз в месяц, часа TTL достаточно
+
+
 def latest_month_id() -> int:
     """Самый свежий месяц в витрине — по нему определяется устаревание
-    данных конкретного клиента."""
+    данных конкретного клиента. Кешируется: значение меняется только при
+    перезаливке витрины, а запрос дёргается на каждый recommend."""
+    import time
+
+    hit = _LATEST_CACHE.get(TABLE)
+    if hit and time.monotonic() - hit[0] < _LATEST_TTL_SEC:
+        return hit[1]
     with connect() as conn, conn.cursor() as cur:
         cur.execute(f"select max(month_id) from {TABLE}")
-        return cur.fetchone()[0]
+        value = cur.fetchone()[0]
+    _LATEST_CACHE[TABLE] = (time.monotonic(), value)
+    return value

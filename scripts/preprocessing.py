@@ -83,3 +83,26 @@ def add_buy_targets(df: pd.DataFrame) -> pd.DataFrame:
 def build_interim(path: Path | str = RAW_PATH) -> pd.DataFrame:
     """Полный путь: сырой csv -> чистая таблица с таргетами."""
     return add_buy_targets(clean(load_raw(path)))
+
+
+if __name__ == "__main__":
+    # python -m scripts.preprocessing — пересоздаёт data/interim с нуля
+    # из сырого csv. Результат байт-в-байт совпадает с выводом EDA.ipynb
+    # (проверено поколоночным сравнением).
+    import json
+
+    out_dir = Path(__file__).resolve().parent.parent / "data" / "interim"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    df = build_interim()
+    df.to_parquet(out_dir / "monthly_with_buys.parquet", compression="zstd", index=False)
+
+    target_cols = [c for c in df.columns if c.endswith("_ult1")]
+    meta = {
+        "target_cols": target_cols,
+        "rare": ["ind_ahor_fin_ult1", "ind_aval_fin_ult1"],  # 2 и 4 покупки на весь датасет
+        "val_month": int(df["month_id"].max()),
+        "random_state": 42,
+    }
+    (out_dir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2))
+    print(f"готово: {out_dir / 'monthly_with_buys.parquet'} {df.shape}, meta.json")
